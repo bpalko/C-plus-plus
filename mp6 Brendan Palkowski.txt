@@ -1,0 +1,232 @@
+/* Brendan Palkowski / CPS 171 / December 4th, 2017
+This program takes an infile. Within this infile it'll take a key, either 'Z',
+'E', or 'D'. These keys will decide the action taken for the remaining string to follow.
+If the token is a 'Z', the program will build a 5x5 2d array for the string. It will
+delete any repetitive chars within the string and then fill the remaining indexes with
+the alphabet which will also remove any repetitive chars. If the key is an 'E', it will
+encrypt the given line based on the 5x5 for the 'Z'. The encrypt algorithm flips the chars
+across the middle diagonal line, which happens to be index[0][0], [1][1], [2][2], etc. If the 
+key is a 'D', it will decrypt the line following based on the 5x5. This program assumes that each
+token will have some contents associated with it. It also assumes there is a endline after each line.
+I'll give a brief description of the functions. Print2d makes the 5x5. Removechar looks for repetition 
+in the string and removes them. Shrinkalpha looks for repetition in the alphabet and removes them based 
+on the string. Populate puts in the string and the remaining alphabet. Encrypt is the logic associated for 
+encryption. Output is written to console.
+*/
+
+#include <iostream>
+#include <string>
+#include <fstream>
+
+using namespace std;
+
+const int SIZE = 5;  //global for 5x5
+
+void print2d(char wordgiven[SIZE][SIZE]);
+void populate(char wordgiven[SIZE][SIZE], char words[], char letters[], int wordssize);
+void removechar(char words[], char wordsort[], int& size, int& size2);
+void shrinkalpha(char wordsort[], char letters[], int& sizeshr);
+char encrypt(char wordgiven[][SIZE], char given);
+
+int main() 
+{
+
+	ifstream inFile;
+	inFile.open("mp6in.txt");
+	char wordgiven[SIZE][SIZE];
+	char firstCh;
+	string Strtaken;
+	while (inFile >> firstCh) 
+	{
+		getline(inFile, Strtaken);
+		Strtaken = Strtaken.substr(1);
+		cout << "****************************************" << endl;
+		cout << Strtaken << endl;
+		if (firstCh == 'Z') {
+			char letters[26] = 
+				{ 'A', 'B', 'C', 'D', 'E', 'F', 'G', 
+				'H', 'I', 'J','K', 'L', 'M', 'N', 'O', 
+				'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 
+				'X', 'Y' };
+
+			char words[sizeof(Strtaken)] = { 0 }; //null
+			char wordsort[sizeof(Strtaken)] = { 0 }; //null
+
+			for (int i = 0; i < Strtaken.length(); i++)  //string into char array
+				words[i] = Strtaken[i];
+
+			int w = sizeof(words);
+			for (int i = 0; i < w; i++)   // Copy array for bubble sort
+			{
+				wordsort[i] = words[i];
+			}
+			
+			int first, temp, len = Strtaken.length();   //Bubble sort for alphabet filler
+			for (int i = 0; i < len; i++)
+			{
+				for (int j = 0; j < len; j++)
+				{
+					if (wordsort[j] > wordsort[i])
+					{
+						temp = wordsort[j];
+						wordsort[j] = wordsort[i];
+						wordsort[i] = temp;
+					}
+				}
+			}
+			removechar(words, wordsort, w, len);
+			int sizeshr = 25;
+			shrinkalpha(wordsort, letters, sizeshr);
+			populate(wordgiven, words, letters, w);
+			print2d(wordgiven);
+		}
+		if (firstCh == 'E') 
+		{
+			cout << "Encrypts to: ";
+			for (int indexen = 0; indexen < Strtaken.size(); indexen++)   //index for encrypt
+			{
+				if ((Strtaken[indexen] >= 'a' && Strtaken[indexen] <= 'y') 
+					|| (Strtaken[indexen] >= 'A' && Strtaken[indexen] <= 'Y'))
+				{
+					cout << encrypt(wordgiven, Strtaken[indexen]);
+				}
+				else
+				{
+					cout << Strtaken[indexen];
+				}
+			}
+			cout << endl;
+		}
+		else if (firstCh == 'D') 
+		{
+			cout << "Decrypts to: ";
+			for (int indexde = 0; indexde < Strtaken.size(); indexde++) //index for decrypt
+			{
+				if ((Strtaken[indexde] >= 'a' && Strtaken[indexde] <= 'y') 
+					|| (Strtaken[indexde] >= 'A' && Strtaken[indexde] <= 'Y'))
+				{
+					cout << encrypt(wordgiven, Strtaken[indexde]);
+				}
+				else
+				{
+					cout << Strtaken[indexde];
+				}
+			}
+			cout << endl;
+		}
+	}
+	return 0;
+}
+void print2d(char wordgiven[SIZE][SIZE]) 
+{
+	for (int row = 0; row < SIZE; row++) 
+	{
+		for (int col = 0; col < SIZE; col++)
+		{
+			cout << wordgiven[row][col] << " ";
+		}
+		cout << endl;
+	}
+}
+void populate(char wordgiven[SIZE][SIZE], char words[], char letters[], int wordssize) 
+{
+	int index = 0;
+	int alpha = 0;
+
+	for (int row = 0; row < SIZE; row++) 
+	{
+		for (int col = 0; col < SIZE; col++) 
+		{
+			if (index < wordssize - 1)
+			{
+				wordgiven[row][col] = words[index];
+				index++;
+			}
+			else if (alpha < 25) 
+			{
+				wordgiven[row][col] = letters[alpha];
+				alpha++;
+			}
+		}
+	}
+}
+void removechar(char words[], char wordsort[], int& size, int& size2) 
+{
+	int wordssize = size, copysize = size2;
+	int start = 0, start2 = 0;
+	char test, test2;
+
+	while (start != wordssize) 
+	{
+		test = words[start];
+		for (int i = start + 1; i <= wordssize; i++) 
+		{
+			if (test == words[i]) 
+			{
+				for (int j = i; j < wordssize; j++)
+				{
+					words[j] = words[j + 1];
+				}
+				wordssize -= 1;
+				i--;
+			}
+		}
+		start += 1;
+	}
+	size = wordssize;
+	while (start2 != copysize) 
+	{
+		test2 = wordsort[start2];
+		for (int i2 = start2 + 1; i2 <= copysize; i2++) 
+		{
+			if (test2 == wordsort[i2])
+			{
+				for (int j2 = i2; j2 < copysize; j2++)
+				{
+					wordsort[j2] = wordsort[j2 + 1];
+				}
+				copysize -= 1;
+				i2--;
+			}
+		}
+		start2 += 1;
+	}
+	size2 = copysize;
+}
+void shrinkalpha(char wordsort[], char letters[], int& sizeshr) 
+{
+	int shrinksize = sizeshr;
+	int start = 0;
+	char del;
+	int Letterssize = 25;
+
+	for (int i = 0; i < sizeshr; i++) 
+	{
+		del = wordsort[i];
+		for (int j = 0; j < Letterssize; j++) 
+		{
+			if (letters[j] == del) {
+				for (int k = j; k < Letterssize; k++)
+				{
+					letters[k] = letters[k + 1];
+				}
+				Letterssize--;
+				j--;
+			}
+		}
+	}
+}
+char encrypt(char wordgiven[][SIZE], char given) 
+{
+	if (given >= 'a' && given <= 'y') given -= 32;
+	for (int row = 0; row < 5; row++) 
+	{
+		for (int col = 0; col < 5; col++) 
+		{
+			if (wordgiven[row][col] == given) 
+			{
+				return wordgiven[col][row];
+			}
+		}
+	}
+}
